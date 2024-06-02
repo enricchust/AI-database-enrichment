@@ -1,0 +1,7 @@
+python-dotenv
+openai
+requests
+beautifulsoup4
+streamlit
+pandas
+setuptools
