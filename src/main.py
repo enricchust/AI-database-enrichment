@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import openai
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 import time
 import logging
 import streamlit as st
@@ -46,8 +46,27 @@ def get_web_content(url):
 def parse_html(html_content):
     if html_content is None:
         raise ValueError("El contenido HTML es None, no se puede analizar.")
+    
     soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # Remove script, style, and comments
+    for script in soup(["script", "style"]):
+        script.decompose()
+    for comment in soup.findAll(text=lambda text: isinstance(text, Comment)):
+        comment.extract()
+
+    # Remove cookie consent elements
+    cookie_selectors = [
+        '.cookie', '.cookies', '#cookie', '#cookies', 
+        '#cookie-consent', '.cookie-consent', 
+        '.cookie-notice', '#cookie-notice'
+    ]
+    for selector in cookie_selectors:
+        for element in soup.select(selector):
+            element.decompose()
+    
     return soup
+
 
 def extract_text(soup):
     texts = soup.stripped_strings
