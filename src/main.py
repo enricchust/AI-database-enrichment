@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import openai
 import requests
-from bs4 import BeautifulSoup, Comment
+from bs4 import BeautifulSoup
 import time
 import logging
 import streamlit as st
@@ -46,27 +46,8 @@ def get_web_content(url):
 def parse_html(html_content):
     if html_content is None:
         raise ValueError("El contenido HTML es None, no se puede analizar.")
-    
     soup = BeautifulSoup(html_content, 'html.parser')
-    
-    # Remove script, style, and comments
-    for script in soup(["script", "style"]):
-        script.decompose()
-    for comment in soup.findAll(text=lambda text: isinstance(text, Comment)):
-        comment.extract()
-
-    # Remove cookie consent elements
-    cookie_selectors = [
-        '.cookie', '.cookies', '#cookie', '#cookies', 
-        '#cookie-consent', '.cookie-consent', 
-        '.cookie-notice', '#cookie-notice'
-    ]
-    for selector in cookie_selectors:
-        for element in soup.select(selector):
-            element.decompose()
-    
     return soup
-
 
 def extract_text(soup):
     texts = soup.stripped_strings
@@ -115,13 +96,14 @@ def ask_gpt4(prompt, assis_id):
     response = wait_for_run_completion(client=client, thread_id=thread_id, run_id=run.id)
     return response
 
-def analyze_url(url, question, assisId, expected_output):
+def analyze_url(url, row, question, assisId, expected_output):
     url_search = ensure_http(url)
     web_content = get_web_content(url_search)
-    if web_content is not None:
+    if url is not None:
         soup = parse_html(web_content)
         full_text = extract_text(soup)
-        prompt = f"{full_text}\n\n{question}\n\n Your response output must be in the form{expected_output}"
+        prompt = f"""From the data of the next row, and the website provided, response to the user question.\n\n
+        The row: {row}\n\n The website{full_text}\n\n{question}\n\n Your response output must be in the form{expected_output}"""
         response = ask_gpt4(prompt, assisId)
         return response
     else:
@@ -143,7 +125,7 @@ def process_file(uploaded_file, question, assisId, expected_output, new_column_n
     for index, row in df.iterrows():
         url = extract_url_from_row(row)
         if url:
-            result = analyze_url(url, question, assisId, expected_output)
+            result = analyze_url(url, row, question, assisId, expected_output)
             results.append(result)
         else:
             results.append("No URL Found")
