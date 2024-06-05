@@ -54,10 +54,8 @@ def extract_text(soup):
     full_text = ' '.join(texts)
     return full_text
 
-
 def wait_for_run_completion(client, thread_id, run_id, sleep_interval=5):
     """
-    Wait
     Waits for a run to complete and prints the elapsed time.
     :param client: The OpenAI client object.
     :param thread_id: The ID of the thread.
@@ -68,21 +66,10 @@ def wait_for_run_completion(client, thread_id, run_id, sleep_interval=5):
         try:
             run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
             if run.completed_at:
-                elapsed_time = run.completed_at - run.created_at
-                formatted_elapsed_time = time.strftime(
-                    "%H:%M:%S", time.gmtime(elapsed_time)
-                )
-                st.info(f"Run completed in {formatted_elapsed_time}")
-                logging.info(f"Run completed in {formatted_elapsed_time}")
-                # Get messages here once Run is completed!
-                messages = client.beta.threads.messages.list(thread_id=thread_id)
-                last_message = messages.data[0]
-                response = last_message.content[0].text.value
-                return response
+                return run
         except Exception as e:
             logging.error(f"An error occurred while retrieving the run: {e}")
             break
-        logging.info("Waiting for run to complete...")
         time.sleep(sleep_interval)
 
 def ask_gpt4(prompt, assis_id):
@@ -92,18 +79,24 @@ def ask_gpt4(prompt, assis_id):
         thread_id=thread_id,
         assistant_id=assis_id,
         instructions=prompt
-    )            
-    response = wait_for_run_completion(client=client, thread_id=thread_id, run_id=run.id)
-    return response
+    )
+    run = wait_for_run_completion(client=client, thread_id=thread_id, run_id=run.id)
+    if run:
+        messages = client.beta.threads.messages.list(thread_id=thread_id)
+        last_message = messages.data[0]
+        response = last_message.content[0].text.value
+        return response
+    else:
+        return "Error"
 
 def analyze_url(url, row, question, assisId, expected_output):
     url_search = ensure_http(url)
     web_content = get_web_content(url_search)
-    if url is not None:
+    if web_content is not None:
         soup = parse_html(web_content)
         full_text = extract_text(soup)
         prompt = f"""From the data of the next row, and the website provided, response to the user question.\n\n
-        The row: {row}\n\n The website{full_text}\n\n{question}\n\n Your response output must be in the form{expected_output}"""
+        The row: {row}\n\n The website: {full_text}\n\n{question}\n\n Your response output must be in the form {expected_output}"""
         response = ask_gpt4(prompt, assisId)
         return response
     else:
@@ -121,6 +114,10 @@ def process_file(uploaded_file, question, assisId, expected_output, new_column_n
     # Crear una lista para almacenar los resultados
     results = []
     
+    # Crear barra de progreso
+    progress_bar = st.progress(0)
+    total_rows = len(df)
+    
     # Analizar cada fila del DataFrame
     for index, row in df.iterrows():
         url = extract_url_from_row(row)
@@ -129,6 +126,9 @@ def process_file(uploaded_file, question, assisId, expected_output, new_column_n
             results.append(result)
         else:
             results.append("No URL Found")
+        
+        # Actualizar la barra de progreso
+        progress_bar.progress((index + 1) / total_rows)
     
     # Añadir los resultados al DataFrame original
     df[new_column_name] = results
@@ -138,10 +138,9 @@ def process_file(uploaded_file, question, assisId, expected_output, new_column_n
 def main():
     st.title("Web Analyzer")
 
-    question_input = st.text_input("Enter your question:", "¿Es esta página web un ecommerce?")
-    new_column_name = st.text_input("Enter the name of the new column:", "Is ecommerce")
-    expected_output = st.text_input("Enter the expected output:", "True or false")
-
+    question_input = st.text_input("Enter your question:", "Dime la localidad donde se basan y luego hazme un resumen de que hacen las empresas(max 15 palabras)")
+    new_column_name = st.text_input("Enter the name of the new column:", "Location,Summary")
+    expected_output = st.text_input("Enter the expected output:", "Localidad,Descripción(max 10 palabras)")
     
     uploaded_file = st.file_uploader("Choose a CSV or TXT file", type=["csv", "txt"])
 
