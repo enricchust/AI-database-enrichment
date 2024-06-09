@@ -136,18 +136,46 @@ def process_file(uploaded_file, question, assisId, expected_output, new_column_n
     return df
 
 def main():
-    st.title("Web Analyzer")
+    st.title("AI Database Enrichment")
 
-    question_input = st.text_input("Enter your question:", "Dime la localidad donde se basan y luego hazme un resumen de que hacen las empresas(max 15 palabras)")
-    new_column_name = st.text_input("Enter the name of the new column:", "Location,Summary")
-    expected_output = st.text_input("Enter the expected output:", "Localidad,Descripción(max 10 palabras)")
-    
+    # Inicializar listas para preguntas, columnas y salidas esperadas en el estado de la sesión
+    if 'questions' not in st.session_state:
+        st.session_state['questions'] = []
+    if 'column_names' not in st.session_state:
+        st.session_state['column_names'] = []
+    if 'expected_outputs' not in st.session_state:
+        st.session_state['expected_outputs'] = []
+
+    # Inputs iniciales
+    question_input = st.text_input("Enter your question:", value="", placeholder="Dime la localidad donde se basan y luego hazme un resumen de que hacen las empresas(max 15 palabras)")
+    column_name_input = st.text_input("Enter the name of the new column:", value="", placeholder="Location,Summary")
+    expected_output_input = st.text_input("Enter the expected output:", value="", placeholder= "Localidad,Descripción(max 10 palabras)")
+
+    # Mostrar los inputs adicionales
+    for i in range(len(st.session_state.questions)):
+        st.text_input(f"Enter your question {i+2}:", value="", placeholder="Dime la localidad donde se basan y luego hazme un resumen de que hacen las empresas(max 15 palabras)")
+        st.text_input(f"Enter the name of the new column {i+2}:", value="", placeholder="Location,Summary")
+        st.text_input(f"Enter the expected output {i+2}:", value="", placeholder= "Localidad,Descripción(max 10 palabras)")
+
+
+    # Botón para añadir más inputs
+    if st.button("Add More Questions"):
+        st.session_state.questions.append(question_input)
+        st.session_state.column_names.append(column_name_input)
+        st.session_state.expected_outputs.append(expected_output_input)
+        st.experimental_rerun()
+
     uploaded_file = st.file_uploader("Choose a CSV or TXT file", type=["csv", "txt"])
 
     if uploaded_file and st.button("Analyze File"):
-        if question_input:
+        if st.session_state.questions:
+            # Concatenar todas las preguntas en una sola cadena
+            concatenated_questions = " ".join(st.session_state.questions)
+            concatenated_column_names = ",".join(st.session_state.column_names)
+            concatenated_expected_outputs = ",".join(st.session_state.expected_outputs)
+
             assisId = "asst_xZNrnBaC0QctHoXlzhNIvFjs"  # ID del asistente
-            result_df = process_file(uploaded_file, question_input, assisId, expected_output, new_column_name)
+            result_df = process_file(uploaded_file, concatenated_questions, assisId, concatenated_expected_outputs, concatenated_column_names)
             st.write(result_df)
 
             # Descargar resultados como CSV
@@ -159,7 +187,6 @@ def main():
                 mime='text/csv',
             )
         else:
-            st.error("Por favor, ingrese una pregunta.")
-
+            st.error("Please insert a question.")
 if __name__ == "__main__":
     main()

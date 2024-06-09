@@ -6,6 +6,6 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=[],  # Añade aquí tus dependencias
-    author="Tu Nombre",
-    description="Descripción del proyecto",
+    author="Enric Chust Gimeno",
+    description="",
 )
