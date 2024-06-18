@@ -168,14 +168,14 @@ def main():
     uploaded_file = st.file_uploader("Choose a CSV or TXT file", type=["csv", "txt"])
 
     if uploaded_file and st.button("Analyze File"):
-        if st.session_state.questions:
-            # Concatenar todas las preguntas en una sola cadena
-            concatenated_questions = " ".join(st.session_state.questions)
-            concatenated_column_names = ",".join(st.session_state.column_names)
-            concatenated_expected_outputs = ",".join(st.session_state.expected_outputs)
+        if question_input:
+            # Añadir la pregunta actual a la lista de preguntas
+            st.session_state.questions.append(question_input)
+            st.session_state.column_names.append(column_name_input)
+            st.session_state.expected_outputs.append(expected_output_input)
 
             assisId = "asst_xZNrnBaC0QctHoXlzhNIvFjs"  # ID del asistente
-            result_df = process_file(uploaded_file, concatenated_questions, assisId, concatenated_expected_outputs, concatenated_column_names)
+            result_df = process_file(uploaded_file, question_input, assisId, expected_output_input, column_name_input)
             st.write(result_df)
 
             # Descargar resultados como CSV
