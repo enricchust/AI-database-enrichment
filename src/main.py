@@ -8,13 +8,15 @@ import logging
 import streamlit as st
 import pandas as pd
 import random
+import json
+from scrapingbee import ScrapingBeeClient
 
-# Cargar las variables de entorno
+# Charge environment keys
 load_dotenv() 
 client = openai.OpenAI()
-# Configurar la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
+scraping_bee_api_key = os.getenv("SCRAPING_BEE_API_KEY")
+clientScrapingBee = ScrapingBeeClient(api_key=scraping_bee_api_key)
 # Definir el modelo a utilizar
 model = "gpt-3.5-turbo"
 
@@ -108,11 +110,46 @@ def extract_url_from_row(row):
             return item
     return None
 
+def _web_scraping_scraping_bee(url):
+    extract_rules = {
+        "email_addresses":{
+            "selector":"a[href^='mailto']@href",
+            "type":"list"
+        },
+        "all_links":{
+            "selector":"a@href",
+            "type":"list"
+        }
+    }
+
+    response = clientScrapingBee.get(
+        url,
+        params={ 
+            "extract_rules": extract_rules, 
+        },  
+    )
+
+    data = json.loads(response.content.decode('utf-8'))
+    return response, data
+
+
+def scrape_linkedin(url):
+    response, data = _web_scraping_scraping_bee(ensure_http(url))
+    all_links = data["all_links"]
+    web_linkedin = set()
+    if all_links != []:
+        for link in all_links:
+            if link != None and "linkedin.com/company" in link:
+                web_linkedin.add(link)
+        
+    return list(web_linkedin)
+
 def process_file(uploaded_file, question, assisId, expected_output, new_column_name):
     df = pd.read_csv(uploaded_file)
     
     # Crear una lista para almacenar los resultados
     results = []
+    linkedin_urls = []
     
     # Crear barra de progreso
     progress_bar = st.progress(0)
@@ -124,13 +161,17 @@ def process_file(uploaded_file, question, assisId, expected_output, new_column_n
         if url:
             result = analyze_url(url, row, question, assisId, expected_output)
             results.append(result)
+            linkedin_url = scrape_linkedin(url)
+            linkedin_urls.append(linkedin_url)
         else:
             results.append("No URL Found")
+            linkedin_urls.append("No URL Found")
         
         # Actualizar la barra de progreso
         progress_bar.progress((index + 1) / total_rows)
     
     # Añadir los resultados al DataFrame original
+    df["Linkedin"] = linkedin_urls
     df[new_column_name] = results
     
     return df
