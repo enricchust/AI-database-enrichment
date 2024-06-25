@@ -144,7 +144,7 @@ def scrape_linkedin(url):
         
     return list(web_linkedin)
 
-def process_file(uploaded_file, question, assisId, expected_output, new_column_name):
+def process_file(uploaded_file, question, assisId, expected_output, new_column_name, scrape_company_linkedin):
     df = pd.read_csv(uploaded_file)
     
     # Crear una lista para almacenar los resultados
@@ -161,8 +161,9 @@ def process_file(uploaded_file, question, assisId, expected_output, new_column_n
         if url:
             result = analyze_url(url, row, question, assisId, expected_output)
             results.append(result)
-            linkedin_url = scrape_linkedin(url)
-            linkedin_urls.append(linkedin_url)
+            if scrape_company_linkedin:
+                linkedin_url = scrape_linkedin(url)
+                linkedin_urls.append(linkedin_url)
         else:
             results.append("No URL Found")
             linkedin_urls.append("No URL Found")
@@ -170,8 +171,9 @@ def process_file(uploaded_file, question, assisId, expected_output, new_column_n
         # Actualizar la barra de progreso
         progress_bar.progress((index + 1) / total_rows)
     
-    # Añadir los resultados al DataFrame original
-    df["Linkedin"] = linkedin_urls
+    if scrape_company_linkedin:
+        df["Linkedin"] = linkedin_urls
+
     df[new_column_name] = results
     
     return df
@@ -197,6 +199,8 @@ def main():
         st.text_input(f"Enter your question {i+2}:", value="", placeholder="Dime la localidad donde se basan y luego hazme un resumen de que hacen las empresas(max 15 palabras)")
         st.text_input(f"Enter the name of the new column {i+2}:", value="", placeholder="Location,Summary")
         st.text_input(f"Enter the expected output {i+2}:", value="", placeholder= "Localidad,Descripción(max 10 palabras)")
+    
+    scrape_company_linkedin = st.checkbox("¿Deseas scrapear el LinkedIn de la compañía?", value=False)
 
 
     # Botón para añadir más inputs
@@ -216,7 +220,7 @@ def main():
             st.session_state.expected_outputs.append(expected_output_input)
 
             assisId = "asst_xZNrnBaC0QctHoXlzhNIvFjs"  # ID del asistente
-            result_df = process_file(uploaded_file, question_input, assisId, expected_output_input, column_name_input)
+            result_df = process_file(uploaded_file, question_input, assisId, expected_output_input, column_name_input, scrape_company_linkedin)
             st.write(result_df)
 
             # Descargar resultados como CSV
