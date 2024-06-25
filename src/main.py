@@ -142,17 +142,16 @@ def scrape_linkedin(url):
             if link != None and "linkedin.com/company" in link:
                 web_linkedin.add(link)
         
-    return list(web_linkedin)
+    return '; '.join(web_linkedin)
 
 def process_file(uploaded_file, question, assisId, expected_output, new_column_name, scrape_company_linkedin):
     df = pd.read_csv(uploaded_file)
     
-    # Crear una lista para almacenar los resultados
     results = []
     linkedin_urls = []
     
-    # Crear barra de progreso
     progress_bar = st.progress(0)
+    progress_text = st.empty()
     total_rows = len(df)
     
     # Analizar cada fila del DataFrame
@@ -168,8 +167,10 @@ def process_file(uploaded_file, question, assisId, expected_output, new_column_n
             results.append("No URL Found")
             linkedin_urls.append("No URL Found")
         
-        # Actualizar la barra de progreso
+         # Actualizar la barra de progreso y mostrar el número actual de fila
         progress_bar.progress((index + 1) / total_rows)
+        progress_text.text(f"Processing row {index + 1}/{total_rows}")  # Mostrar el progreso en formato "1/34, 2/34, etc."
+
     
     if scrape_company_linkedin:
         df["Linkedin"] = linkedin_urls
