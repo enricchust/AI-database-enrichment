@@ -3,6 +3,9 @@
 ## Overview
 AI CSV Data Enrichment for SDRs is a project designed to help Sales Development Representatives (SDRs) enhance and enrich their CSV data using advanced artificial intelligence techniques. This repository contains the codebase and resources necessary to implement AI-driven data enrichment processes, improving the quality and completeness of sales data.
 
+## Disclaimer
+This is the first version of an MVP, created in a couple of evenings for a friend to work, so the best code and LLM practices are not applied, maybe when I have time I'll continue and improve it. If you have any question or want to collaborate contact me to enricchustg@gmail.com
+
 ## Installation
 To get started with the project, follow these steps:
 
