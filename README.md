@@ -35,4 +35,4 @@ To get started with the project, follow these steps:
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
 ## Contact
-For any questions or inquiries, please contact [Enric Chust](mailto:your-email@example.com).
+For any questions or inquiries, please contact [Enric Chust].
